@@ -1,0 +1,2 @@
+# poly
+Python polynomial library

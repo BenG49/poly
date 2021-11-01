@@ -131,7 +131,7 @@ class Poly:
 		sum = 0
 
 		for i in range(len(self)):
-			if i:
+			if self.l[i]:
 				sum += self.l[i] * x ** i
 
 		return sum

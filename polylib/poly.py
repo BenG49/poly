@@ -126,3 +126,12 @@ class Poly:
 			out[pow - 1] = pow * term
 	
 		return out
+
+	def eval(self, x: float) -> float:
+		sum = 0
+
+		for i in range(len(self)):
+			if i:
+				sum += self.l[i] * x ** i
+
+		return sum

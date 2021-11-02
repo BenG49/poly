@@ -12,11 +12,7 @@ def main():
 	b = parse(input('input poly b: '))
 	print(b)
 
-	c = a * b
-
-	print(f'a*b={c}')
-	print(f'f(3)={c.eval(3)}')
-	print(f'a order: {a.order()}, b order: {b.order()}')
+	print(f'a/b = {a//b} r {a%b}')
 
 if __name__ == '__main__':
 	main()

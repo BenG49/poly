@@ -1,9 +1,9 @@
 from copy import deepcopy
 
 class Poly:
-	def __init__(self, d = None):
+	def __init__(self, d: dict = None):
 		self.d = d if d else {}
-		self.leading = 0
+		self.leading_c = 0
 	
 	def __str__(self) -> str:
 		if not self.d: return '0'
@@ -38,8 +38,11 @@ class Poly:
 	
 	def __setitem__(self, pow, coef):
 		if coef != 0:
-			self.leading = max(self.leading, pow)
+			self.leading_c = max(self.leading_c, pow)
 			self.d[pow] = coef
+		else:
+			if self.d.get(pow) is not None:
+				del self[pow]
 	def __getitem__(self, pow) -> float:
 		v = self.d.get(pow)
 		return v if v is not None else 0
@@ -47,13 +50,12 @@ class Poly:
 		if self.d.get(pow) is not None:
 			del self.d[pow]
 
-			if pow == self.leading:
-				self.leading = max(self.d.keys())
+			if pow == self.leading_c:
+				self.leading_c = max(self.d.keys())
 	
 	def __len__(self) -> int: return len(self.d)
 
-	def __sub__(self, o):
-		return self + o * -1
+	def __sub__(self, o): return self + o * -1
 	
 	def __iadd__(self, o):
 		if type(o) is Poly:
@@ -65,6 +67,8 @@ class Poly:
 			self.d[0] += o
 
 			return self
+		else:
+			raise ValueError
 
 	def __add__(self, o):
 		if type(o) is Poly:
@@ -80,6 +84,8 @@ class Poly:
 			out[0] += o
 
 			return out
+		else:
+			raise ValueError
 	
 	def __rmul__(self, o): return self * o
 	def __mul__(self, o):
@@ -87,7 +93,7 @@ class Poly:
 		if type(o) is Poly:
 			if len(o) == 1 and o.d.get(0) is not None:
 				return self.__mul__(o.d[0])
-			
+
 			out = Poly()
 
 			# loop through self
@@ -96,7 +102,7 @@ class Poly:
 				for p2, c2 in o.d.items():
 					# multiply
 					out[p1 + p2] += c1 * c2
-			
+
 			return out
 		elif type(o) is int or type(o) is float:
 			out = deepcopy(self)
@@ -105,6 +111,67 @@ class Poly:
 				out.d[p] *= o
 
 			return out
+		else:
+			raise ValueError
+	
+	# (pow, coefficient)
+	def div_terms(dividend: tuple, divisor: tuple) -> tuple:
+		return (dividend[0] - divisor[0],
+		        dividend[1] / divisor[1])
+
+	# TRUE DIV NOT SUPPORTED, CANNOT RET REMAINDER
+	def __floordiv__(self, denom):
+		if type(denom) is Poly:
+			if denom.order() > self.order():
+				raise ValueError
+
+			out = Poly()
+			# numer will be modified, make copy
+			numer = deepcopy(self)
+
+			while numer.order() >= denom.order():
+				(p, c) = Poly.div_terms(
+					numer.leading(),
+					denom.leading())
+
+				out[p] = c
+
+				# multiply and sub
+				numer -= denom * Poly({ p : c })
+
+			return out
+		elif type(denom) is int or type(denom) is float:
+			out = deepcopy(self)
+
+			for p in self.d:
+				out.d[p] /= denom
+
+			return out
+		else:
+			raise ValueError
+
+	def __mod__(self, denom):
+		if type(denom) is Poly:
+			if denom.order() > self.order():
+				raise ValueError
+
+			out = Poly()
+			# numer will be modified, make copy
+			numer = deepcopy(self)
+
+			while numer.order() >= denom.order():
+				(p, c) = Poly.div_terms(
+					numer.leading(),
+					denom.leading())
+
+				out[p] = c
+
+				# multiply and sub
+				numer -= denom * Poly({ p : c })
+
+			return numer
+		else:
+			raise ValueError
 	
 	def derivative(self):
 		out = Poly()
@@ -123,4 +190,7 @@ class Poly:
 		return sum
 	
 	def order(self) -> int:
-		return self.leading
+		return self.leading_c
+	
+	def leading(self) -> tuple:
+		return (self.leading_c, self[self.leading_c])

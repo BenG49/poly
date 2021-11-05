@@ -2,8 +2,12 @@ from copy import deepcopy
 
 class Poly:
 	def __init__(self, d: dict = None):
-		self.d = d if d else {}
-		self.leading_c = 0
+		if d:
+			self.d = d
+			self.leading_c = max(d.keys())
+		else:
+			self.d = {}
+			self.leading_c = 0
 	
 	def __str__(self) -> str:
 		if not self.d: return '0'
@@ -54,6 +58,20 @@ class Poly:
 				self.leading_c = max(self.d.keys())
 	
 	def __len__(self) -> int: return len(self.d)
+
+	def __eq__(self, o) -> bool:
+		if type(o) is Poly:
+			if len(self) != len(o): return False
+
+			for p, c in self.d.items(0):
+				if o[p] != c:
+					return False
+			
+			return True
+		elif type(o) is int or type (o) is float:
+			return len(self) == 1 and self[0] == o
+		else:
+			raise ValueError
 
 	def __sub__(self, o): return self + o * -1
 	
@@ -118,9 +136,8 @@ class Poly:
 	def div_terms(dividend: tuple, divisor: tuple) -> tuple:
 		return (dividend[0] - divisor[0],
 		        dividend[1] / divisor[1])
-
-	# TRUE DIV NOT SUPPORTED, CANNOT RET REMAINDER
-	def __floordiv__(self, denom):
+	
+	def div_rem(self, denom) -> tuple:
 		if type(denom) is Poly:
 			if denom.order() > self.order():
 				raise ValueError
@@ -139,39 +156,31 @@ class Poly:
 				# multiply and sub
 				numer -= denom * Poly({ p : c })
 
-			return out
+			return out, numer
 		elif type(denom) is int or type(denom) is float:
 			out = deepcopy(self)
 
 			for p in self.d:
 				out.d[p] /= denom
 
-			return out
+			return out, 0
 		else:
 			raise ValueError
+
+	# TRUE DIV NOT SUPPORTED, CANNOT RET REMAINDER
+	def __floordiv__(self, denom):
+		return self.div_rem(denom)[0]
 
 	def __mod__(self, denom):
-		if type(denom) is Poly:
-			if denom.order() > self.order():
-				raise ValueError
+		return self.div_rem(denom)[1]
 
-			out = Poly()
-			# numer will be modified, make copy
-			numer = deepcopy(self)
+	def __call__(self, x: float) -> float:
+		sum = 0
 
-			while numer.order() >= denom.order():
-				(p, c) = Poly.div_terms(
-					numer.leading(),
-					denom.leading())
+		for p, c, in self.d.items():
+			sum += c * x ** p
 
-				out[p] = c
-
-				# multiply and sub
-				numer -= denom * Poly({ p : c })
-
-			return numer
-		else:
-			raise ValueError
+		return sum
 	
 	def derivative(self):
 		out = Poly()
@@ -180,14 +189,6 @@ class Poly:
 			out[p - 1] = p * c
 	
 		return out
-
-	def eval(self, x: float) -> float:
-		sum = 0
-
-		for p, c, in self.d.items():
-			sum += c * x ** p
-
-		return sum
 	
 	def order(self) -> int:
 		return self.leading_c

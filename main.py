@@ -1,11 +1,8 @@
-from polylib.poly import Poly
 from polylib.parse import parse
 
 def main():
-	p = Poly()
-	p[-1] = 10
-	print(p)
-	print(p.derivative())
+	# a = parse('x^2+5x-6')
+	# b = parse('x-1')
 
 	a = parse(input('input poly a: '))
 	print(a)
@@ -13,6 +10,9 @@ def main():
 	print(b)
 
 	print(f'a/b = {a//b} r {a%b}')
+
+	print(f'factors of a: {a.factors()}')
+	print(f'zeroes of a:  {a.zeroes()}')
 
 if __name__ == '__main__':
 	main()

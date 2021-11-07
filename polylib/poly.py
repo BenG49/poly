@@ -1,4 +1,37 @@
 from copy import deepcopy
+from math import sqrt
+
+# (root, remaining)
+def newton(p) -> tuple:
+	EPSILON = 0.0000000000001
+	MAX_ITER = 1000
+
+	d = p.derivative()
+
+	x = 1
+	i = 0
+
+	while i < MAX_ITER and abs(p(x)) > EPSILON:
+		_d = d(x)
+
+		# works tm
+		if _d:
+			x -= p(x) / _d
+		else:
+			x -= EPSILON
+
+		i += 1
+	
+	if not i < MAX_ITER:
+		return None, p
+	
+	# round if very close to integer
+	if abs(round(x) - x) <= EPSILON:
+		x = round(x)
+	
+	out = Poly({ 1 : 1, 0 : -x })
+
+	return (out, p // out)
 
 class Poly:
 	def __init__(self, d: dict = None):
@@ -9,6 +42,8 @@ class Poly:
 			self.d = {}
 			self.leading_c = 0
 	
+	def __repr__(self) -> str:
+		return self.__str__()
 	def __str__(self) -> str:
 		if not self.d: return '0'
 
@@ -55,7 +90,7 @@ class Poly:
 			del self.d[pow]
 
 			if pow == self.leading_c:
-				self.leading_c = max(self.d.keys())
+				self.leading_c = 0 if len(self.d.keys()) == 0 else max(self.d.keys())
 	
 	def __len__(self) -> int: return len(self.d)
 
@@ -78,11 +113,11 @@ class Poly:
 	def __iadd__(self, o):
 		if type(o) is Poly:
 			for p, c in o.d.items():
-				self.d[p] = self[p] + c
+				self[p] += c
 
 			return self
 		elif type(o) is int or type(o) is float:
-			self.d[0] += o
+			self[0] += o
 
 			return self
 		else:
@@ -126,7 +161,7 @@ class Poly:
 			out = deepcopy(self)
 
 			for p in self.d:
-				out.d[p] *= o
+				out[p] *= o
 
 			return out
 		else:
@@ -161,7 +196,7 @@ class Poly:
 			out = deepcopy(self)
 
 			for p in self.d:
-				out.d[p] /= denom
+				out[p] /= denom
 
 			return out, 0
 		else:
@@ -195,3 +230,42 @@ class Poly:
 	
 	def leading(self) -> tuple:
 		return (self.leading_c, self[self.leading_c])
+	
+	def monic(self):
+		return deepcopy(self) // self.leading_c
+
+	# returns list of polynomials
+	def factors(self) -> list:
+		p = deepcopy(self)
+		roots = []
+
+		while p.order() > 1:
+			r, p = newton(p)
+
+			if r is None:
+				return roots + p
+
+			roots.append(r)
+
+		if p.order() == 1:
+			roots.append(p)
+			return roots
+
+		return roots + p
+
+	def zeroes(self) -> list:
+		if self.order() == 1:
+			return [-self[0] / self[1]]
+		elif self.order() == 2:
+			# quadratic formula
+			d = sqrt(self[1] ** 2 - 4 * self[2] * self[0])
+			a2 = 2 * self[2]
+			return [(-self[1] + d) / a2, (-self[1] - d) / a2]
+		else:
+			f = self.factors()
+			out = []
+
+			for r in f:
+				out += r.zeroes()
+			
+			return out

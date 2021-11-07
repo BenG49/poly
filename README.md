@@ -3,4 +3,3 @@ Python polynomial library
 
 # TODO
 - negative powers in parser
-- finish factoring

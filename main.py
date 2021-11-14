@@ -1,13 +1,15 @@
 from polylib.parse import parse
 
 def main():
-	# a = parse('x^2+5x-6')
-	# b = parse('x-1')
+	a = parse('x^3-11x+150')
+	b = parse('x+6')
 
-	a = parse(input('input poly a: '))
+	# a = parse(input('input poly a: '))
+	# b = parse(input('input poly b: '))
+
 	print(a)
-	b = parse(input('input poly b: '))
 	print(b)
+	print()
 
 	print(f'a/b = {a//b} r {a%b}')
 

@@ -243,7 +243,8 @@ class Poly:
 			r, p = newton(p)
 
 			if r is None:
-				return roots + p
+				roots.append(p)
+				return roots
 
 			roots.append(r)
 
@@ -258,7 +259,12 @@ class Poly:
 			return [-self[0] / self[1]]
 		elif self.order() == 2:
 			# quadratic formula
-			d = sqrt(self[1] ** 2 - 4 * self[2] * self[0])
+			d = self[1] ** 2 - 4 * self[2] * self[0]
+
+			# imaginary numbers
+			if d < 0: return []
+
+			d = sqrt(d)
 			a2 = 2 * self[2]
 			return [(-self[1] + d) / a2, (-self[1] - d) / a2]
 		else:

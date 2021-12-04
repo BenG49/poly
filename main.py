@@ -1,8 +1,8 @@
 from polylib.parse import parse
 
 def main():
-	a = parse('x^3-11x+150')
-	b = parse('x+6')
+	a = parse('6x^2-5x+1')
+	b = parse('3x+2')
 
 	# a = parse(input('input poly a: '))
 	# b = parse(input('input poly b: '))
@@ -12,6 +12,7 @@ def main():
 	print()
 
 	print(f'a/b = {a//b} r {a%b}')
+	print(f'a*b = {a*b}')
 
 	print(f'factors of a: {a.factors()}')
 	print(f'zeroes of a:  {a.zeroes()}')

@@ -1,24 +1,20 @@
 from copy import deepcopy
 
-def netwon_cpx(self) -> tuple:
-	pass
-
 # (root, remaining)
-def newton(self) -> tuple:
+def newton(p) -> tuple:
 	EPSILON = 0.0000000000001
 	MAX_ITER = 1000
 
-	d = self.derivative()
+	d = p.derivative()
 
 	x = 1 # initial guess
 	i = 0 # iteration count
 
-	while i < MAX_ITER and abs(self(x)) > EPSILON:
+	while i < MAX_ITER and abs(p(x)) > EPSILON:
 		delta = d(x)
 
-		# works tm
 		if delta != 0:
-			x -= self(x) / delta
+			x -= p(x) / delta
 		else:
 			# nudge x
 			x -= EPSILON
@@ -27,7 +23,7 @@ def newton(self) -> tuple:
 
 	# could not find real roots
 	if not i < MAX_ITER:
-		return None, self
+		return None, p
 	
 	# round if very close to integer
 	if abs(round(x) - x) <= EPSILON:
@@ -35,7 +31,7 @@ def newton(self) -> tuple:
 	
 	out = Poly({ 1 : 1, 0 : -x })
 
-	return (out, self // out)
+	return (out, p // out)
 
 class Poly:
 	def __init__(self, d: dict = None):

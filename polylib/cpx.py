@@ -64,6 +64,7 @@ class cpx:
 			return cpx(o - self.real, -self.imag)
 
 		return NotImplemented
+
 	def __sub__(self, o):
 		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real - o.real, self.imag - o.imag)
@@ -83,9 +84,12 @@ class cpx:
 
 	def __pow__(self, o):
 		r = abs(self)
-		theta = atan2(self.imag, self.real)
+		arg = atan2(self.imag, self.real)
 
-		return cpx(cos(o * theta), sin(o * theta)) * (r ** o)
+		if type(o) is int or type(o) is float:
+			return cpx(cos(o * arg), sin(o * arg)) * (r ** o)
+
+		return NotImplemented
 
 	def __truediv__(self, o):
 		if isinstance(o, cpx) or type(o) is complex:

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from .cpx import cpx
 
 # (root, remaining)
 def newton(p) -> tuple:
@@ -7,7 +8,7 @@ def newton(p) -> tuple:
 
 	d = p.derivative()
 
-	x = 1 # initial guess
+	x = cpx(1, 1) # initial guess
 	i = 0 # iteration count
 
 	while i < MAX_ITER and abs(p(x)) > EPSILON:
@@ -26,8 +27,13 @@ def newton(p) -> tuple:
 		return None, p
 	
 	# round if very close to integer
-	if abs(round(x) - x) <= EPSILON:
-		x = round(x)
+	if abs(round(x.imag) - x.imag) <= EPSILON:
+		x = cpx(x.real, round(x.imag))
+	if abs(round(x.real) - x.real) <= EPSILON:
+		x = cpx(round(x.real), x.imag)
+	
+	if x.imag == 0:
+		x = x.real
 	
 	out = Poly({ 1 : 1, 0 : -x })
 
@@ -52,6 +58,14 @@ class Poly:
 
 		for p, c in sorted(self.d.items(), reverse=True):
 			if first: first = False
+			elif type(c) is complex:
+				if c.real > 0:
+					out += '+'
+				elif c.real == 0 and c.imag > 0:
+					out += '+'
+
+				out += cpx_str(c)
+				continue
 			elif c > 0:
 				out += '+'
 			
@@ -103,10 +117,8 @@ class Poly:
 					return False
 			
 			return True
-		elif type(o) is int or type (o) is float:
-			return len(self) == 1 and self[0] == o
 		else:
-			raise ValueError
+			return len(self) == 1 and self[0] == o
 
 	def __sub__(self, o): return self + o * -1
 	
@@ -116,12 +128,10 @@ class Poly:
 				self[p] += c
 
 			return self
-		elif type(o) is int or type(o) is float:
+		else:
 			self[0] += o
 
 			return self
-		else:
-			raise ValueError
 
 	def __add__(self, o):
 		if type(o) is Poly:
@@ -131,14 +141,12 @@ class Poly:
 				out[p] += c
 			
 			return out
-		elif type(o) is int or type(o) is float:
+		else:
 			out = deepcopy(self)
 
 			out[0] += o
 
 			return out
-		else:
-			raise ValueError
 	
 	def __rmul__(self, o): return self * o
 	def __mul__(self, o):
@@ -157,15 +165,13 @@ class Poly:
 					out[p1 + p2] += c1 * c2
 
 			return out
-		elif type(o) is int or type(o) is float:
+		else:
 			out = deepcopy(self)
 
 			for p in self.d:
 				out[p] *= o
 
 			return out
-		else:
-			raise ValueError
 	
 	# (pow, coefficient)
 	def div_terms(dividend: tuple, divisor: tuple) -> tuple:
@@ -192,15 +198,13 @@ class Poly:
 				numer -= denom * Poly({ p : c })
 
 			return out, numer
-		elif type(denom) is int or type(denom) is float:
+		else:
 			out = deepcopy(self)
 
 			for p in self.d:
 				out[p] /= denom
 
 			return out, 0
-		else:
-			raise ValueError
 
 	# TRUE DIV NOT SUPPORTED, CANNOT RET REMAINDER
 	def __floordiv__(self, denom):
@@ -209,13 +213,21 @@ class Poly:
 	def __mod__(self, denom):
 		return self.div_rem(denom)[1]
 
-	def __call__(self, x: float) -> float:
-		sum = 0
+	def __call__(self, x: float):
+		if x == 0:
+			if self.d.get(0):
+				return self.d[0]
+			else:
+				return 0
+
+		acc = 0
 
 		for p, c, in self.d.items():
-			sum += c * x ** p
+			print(acc, end='')
+			acc += c * x ** p
+			print(acc)
 
-		return sum
+		return acc
 	
 	def derivative(self):
 		out = Poly()

@@ -9,13 +9,22 @@ class cpx:
 	def __str__(self) -> str:
 		if self.real == 0 and self.imag == 0:
 			return '0'
+		elif self.real != 0 and self.imag > 0:
+			if self.imag == 1:
+				return f'{self.real}+i'
+			else:
+				return f'{self.real}+{self.imag}i'
 
 		out = ''
 
 		if self.real != 0:
 			out += str(self.real)
 
-		if self.imag != 0:
+		if self.imag == 1:
+			out += 'i'
+		elif self.imag == -1:
+			out += '-i'
+		elif self.imag != 0:
 			out += f'{self.imag}i'
 
 		return out
@@ -41,26 +50,30 @@ class cpx:
 		else:
 			self.imag = v
 
-	def __radd__(self, o): self + o
+	def __radd__(self, o): return self + o
 	def __add__(self, o):
-		if isinstance(o, cpx) is type(o) is complex:
+		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real + o.real, self.imag + o.imag)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real + o, self.imag)
 
-	def __rsub__(self, o): self - o
+	def __rsub__(self, o): return self - o
 	def __sub__(self, o):
-		if isinstance(o, cpx) is type(o) is complex:
+		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real - o.real, self.imag - o.imag)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real - o, self.imag)
+		else:
+			raise ValueError
 
 	def __rmul__(self, o): return self * o
 	def __mul__(self, o):
-		if isinstance(o, cpx) is type(o) is complex:
+		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real * o.real - self.imag * o.imag, self.real * o.imag + self.imag + o.real)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real * o, self.imag * o)
+		else:
+			raise ValueError
 
 	def __pow__(self, o):
 		r = abs(self)
@@ -68,11 +81,13 @@ class cpx:
 
 		return cpx(cos(o * theta), sin(o * theta)) * (r ** o)
 
-	def __realdiv__(self, o):
-		if isinstance(o, cpx) is type(o) is complex:
+	def __truediv__(self, o):
+		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real * o.real, self.imag * o.real - self.real * o.imag)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real / o, self.imag / o)
+		else:
+			raise ValueError
 
 	def __abs__(self) -> float:
 		if self.real == 0 and self.imag == 0:
@@ -82,3 +97,6 @@ class cpx:
 
 	def __round__(self):
 		return cpx(round(self.real), round(self.imag))
+
+	def __neg__(self):
+		return cpx(-self.real, -self.imag)

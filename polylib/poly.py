@@ -1,6 +1,9 @@
 from copy import deepcopy
 from .cpx import cpx
 
+def round_digits(f: float, digits: int = 5) -> float:
+	n = 10 ** digits
+	return int(f * n) / n
 
 class Poly:
 	def __init__(self, d: dict = None):
@@ -234,11 +237,12 @@ class Poly:
 			# quadratic formula
 			d = self[1] ** 2 - 4 * self[2] * self[0]
 
-			# imaginary numbers
 			if d < 0:
+				# could just do sqrt d, but this has cleaner output
 				d = cpx(0, (-d) ** 0.5)
+			else:
+				d = d ** 0.5
 
-			d = d ** 0.5
 			a2 = 2 * self[2]
 			return [(-self[1] + d) / a2, (-self[1] - d) / a2]
 		else:
@@ -282,18 +286,14 @@ class Poly:
 		
 		# round if very close to integer
 		if imag:
-			if abs(round(x.imag) - x.imag) <= EPSILON:
-				x = cpx(x.real, round(x.imag))
-			if abs(round(x.real) - x.real) <= EPSILON:
-				x = cpx(round(x.real), x.imag)
+			x = cpx(round_digits(x.real), round_digits(x.imag))
 
 			if x.imag == 0:
 				x = x.real
 		else:
-			if abs(round(x) - x) <= EPSILON:
-				x = round(x)
+			x = round_digits(x)
 		
-		# p(x) = x - factor
+		# factor(x) = x - root
 		out = Poly({ 1 : 1, 0 : -x })
 
 		# shouldn't be remainder

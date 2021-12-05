@@ -57,14 +57,20 @@ class cpx:
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real + o, self.imag)
 
-	def __rsub__(self, o): return self - o
+	def __rsub__(self, o):
+		if isinstance(o, cpx) or type(o) is complex:
+			return cpx(o.real - self.real, o.imag - self.imag)
+		elif type(o) is int or type(o) is float:
+			return cpx(o - self.real, -self.imag)
+
+		return NotImplemented
 	def __sub__(self, o):
 		if isinstance(o, cpx) or type(o) is complex:
 			return cpx(self.real - o.real, self.imag - o.imag)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real - o, self.imag)
-		else:
-			raise ValueError
+
+		return NotImplemented
 
 	def __rmul__(self, o): return self * o
 	def __mul__(self, o):
@@ -72,8 +78,8 @@ class cpx:
 			return cpx(self.real * o.real - self.imag * o.imag, self.real * o.imag + self.imag + o.real)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real * o, self.imag * o)
-		else:
-			raise ValueError
+
+		return NotImplemented
 
 	def __pow__(self, o):
 		r = abs(self)
@@ -86,8 +92,8 @@ class cpx:
 			return cpx(self.real * o.real, self.imag * o.real - self.real * o.imag)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real / o, self.imag / o)
-		else:
-			raise ValueError
+
+		return NotImplemented
 
 	def __abs__(self) -> float:
 		if self.real == 0 and self.imag == 0:

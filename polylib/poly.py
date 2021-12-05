@@ -1,43 +1,6 @@
 from copy import deepcopy
 from .cpx import cpx
 
-# (root, remaining)
-def newton(p) -> tuple:
-	EPSILON = 0.0000000000001
-	MAX_ITER = 1000
-
-	d = p.derivative()
-
-	x = cpx(1, 1) # initial guess
-	i = 0 # iteration count
-
-	while i < MAX_ITER and abs(p(x)) > EPSILON:
-		delta = d(x)
-
-		if delta != 0:
-			x -= p(x) / delta
-		else:
-			# nudge x
-			x -= EPSILON
-
-		i += 1
-
-	# could not find real roots
-	if not i < MAX_ITER:
-		return None, p
-	
-	# round if very close to integer
-	if abs(round(x.imag) - x.imag) <= EPSILON:
-		x = cpx(x.real, round(x.imag))
-	if abs(round(x.real) - x.real) <= EPSILON:
-		x = cpx(round(x.real), x.imag)
-	
-	if x.imag == 0:
-		x = x.real
-	
-	out = Poly({ 1 : 1, 0 : -x })
-
-	return (out, p // out)
 
 class Poly:
 	def __init__(self, d: dict = None):
@@ -58,13 +21,13 @@ class Poly:
 
 		for p, c in sorted(self.d.items(), reverse=True):
 			if first: first = False
-			elif type(c) is complex:
+			elif isinstance(c, cpx) or type(c) is complex:
 				if c.real > 0:
 					out += '+'
 				elif c.real == 0 and c.imag > 0:
 					out += '+'
 
-				out += cpx_str(c)
+				out += str(c)
 				continue
 			elif c > 0:
 				out += '+'
@@ -223,9 +186,7 @@ class Poly:
 		acc = 0
 
 		for p, c, in self.d.items():
-			print(acc, end='')
 			acc += c * x ** p
-			print(acc)
 
 		return acc
 	
@@ -252,7 +213,7 @@ class Poly:
 		roots = []
 
 		while p.order() > 1:
-			r, p = newton(p)
+			r, p = p.newton()
 
 			if r is None:
 				roots.append(p)
@@ -274,7 +235,8 @@ class Poly:
 			d = self[1] ** 2 - 4 * self[2] * self[0]
 
 			# imaginary numbers
-			if d < 0: return []
+			if d < 0:
+				d = cpx(0, (-d) ** 0.5)
 
 			d = d ** 0.5
 			a2 = 2 * self[2]
@@ -287,3 +249,52 @@ class Poly:
 				out += r.zeroes()
 			
 			return out
+
+	# finds a single factor and returns remaining polynomial
+	# (factor, remaining)
+	def newton(self, imag: bool = False) -> tuple:
+		EPSILON = 0.0000000000001
+		MAX_ITER = 1000
+	
+		d = self.derivative()
+		
+		x = cpx(0, 1) if imag else 1 # initial guess
+		i = 0 # iteration count
+		
+		while i < MAX_ITER and abs(self(x)) > EPSILON:
+			delta = d(x)
+	
+			if delta != 0:
+				x -= self(x) / delta
+			else:
+				# nudge x
+				x -= EPSILON
+	
+			i += 1
+	
+		# could not find real roots
+		if not i < MAX_ITER:
+			if imag:
+				# should not happen, didn't find roots in complex plane
+				return None, self
+			else:
+				return self.newton(True)
+		
+		# round if very close to integer
+		if imag:
+			if abs(round(x.imag) - x.imag) <= EPSILON:
+				x = cpx(x.real, round(x.imag))
+			if abs(round(x.real) - x.real) <= EPSILON:
+				x = cpx(round(x.real), x.imag)
+
+			if x.imag == 0:
+				x = x.real
+		else:
+			if abs(round(x) - x) <= EPSILON:
+				x = round(x)
+		
+		# p(x) = x - factor
+		out = Poly({ 1 : 1, 0 : -x })
+
+		# shouldn't be remainder
+		return (out, self // out)

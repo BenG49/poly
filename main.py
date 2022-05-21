@@ -1,6 +1,7 @@
 from polylib.parse import parse
+from polylib.poly import Poly
 
-def main():
+if __name__ == '__main__':
 	a = parse('x^2+1')
 	b = parse('3x+2')
 
@@ -17,5 +18,4 @@ def main():
 	print(f'factors of a: {a.factors()}')
 	print(f'zeroes of a:  {a.zeroes()}')
 
-if __name__ == '__main__':
-	main()
+	print(Poly.lagrange([(0, 1), (1, -2), (2, 5)]))

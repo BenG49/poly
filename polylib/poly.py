@@ -1,11 +1,8 @@
 from copy import deepcopy
 from .cpx import cpx
 
-def round_digits(f: float, digits: int = 5) -> float:
-	n = 10 ** digits
-	return int(f * n) / n
-
 class Poly:
+	# takes in dictionary of {power : coefficient}
 	def __init__(self, d: dict = None):
 		if d:
 			self.d = d
@@ -13,6 +10,40 @@ class Poly:
 		else:
 			self.d = {}
 			self.leading_c = 0
+
+	# create Poly from leading term and list of roots
+	# not sure if there is a more efficient way to do this
+	def from_roots(a: float, roots: list):
+		# the number 1
+		out = Poly({0 : 1})
+
+		for r in roots:
+			# multiply by x - r
+			out *= Poly({1 : 1, 0 : -r})
+		
+		return out * a
+
+	# takes in list of points (tuples), returns Poly passing through those points
+	def lagrange(points: list):
+		# returns a partial polynomial given 
+		def partial(point: tuple):
+			# the number 1
+			out = Poly({0 : 1})
+
+			for r, _ in points:
+				if r == point[0]:
+					continue
+				
+				out *= Poly({1 : 1, 0 : -r})
+
+			return (point[1] / out(point[0])) * out
+		
+		out = Poly()
+
+		for p in points:
+			out += partial(p)
+		
+		return out
 	
 	def __repr__(self) -> str:
 		return self.__str__()
@@ -55,6 +86,7 @@ class Poly:
 
 		return out
 	
+	# sets coefficient at given term
 	def __setitem__(self, pow, coef):
 		if coef != 0:
 			self.leading_c = max(self.leading_c, pow)
@@ -72,6 +104,7 @@ class Poly:
 			if pow == self.leading_c:
 				self.leading_c = 0 if len(self.d.keys()) == 0 else max(self.d.keys())
 	
+	# number of nonzero coefficients
 	def __len__(self) -> int: return len(self.d)
 
 	def __eq__(self, o) -> bool:
@@ -139,12 +172,13 @@ class Poly:
 
 			return out
 	
-	# (pow, coefficient)
-	def div_terms(dividend: tuple, divisor: tuple) -> tuple:
-		return (dividend[0] - divisor[0],
-		        dividend[1] / divisor[1])
-	
+	# divide self by denom and return (quotient, remainder)
 	def div_rem(self, denom) -> tuple:
+		# (pow, coefficient)
+		def div_terms(dividend: tuple, divisor: tuple) -> tuple:
+			return (dividend[0] - divisor[0],
+					dividend[1] / divisor[1])
+
 		if type(denom) is Poly:
 			if denom.order() > self.order():
 				raise ValueError
@@ -154,7 +188,7 @@ class Poly:
 			numer = deepcopy(self)
 
 			while numer.order() >= denom.order():
-				(p, c) = Poly.div_terms(
+				(p, c) = div_terms(
 					numer.leading(),
 					denom.leading())
 
@@ -176,9 +210,11 @@ class Poly:
 	def __floordiv__(self, denom):
 		return self.div_rem(denom)[0]
 
+	# returns remainder of self / denom
 	def __mod__(self, denom):
 		return self.div_rem(denom)[1]
 
+	# evaluates poly for given x value
 	def __call__(self, x: float):
 		if x == 0:
 			if self.d.get(0):
@@ -193,6 +229,7 @@ class Poly:
 
 		return acc
 	
+	# TODO: add Nth derivatives
 	def derivative(self):
 		out = Poly()
 	
@@ -257,6 +294,10 @@ class Poly:
 	# finds a single factor and returns remaining polynomial
 	# (factor, remaining)
 	def newton(self, imag: bool = False) -> tuple:
+		def round_digits(f: float, digits: int = 5) -> float:
+			n = 10 ** digits
+			return int(f * n) / n
+
 		EPSILON = 0.0000000000001
 		MAX_ITER = 1000
 	

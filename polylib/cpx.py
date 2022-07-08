@@ -1,4 +1,5 @@
-from math import atan2, cos, sin
+from math import atan2, cos, pi, sin
+from typing import Tuple
 
 class cpx:
 	def __init__(self, real: float, imag: float):
@@ -84,12 +85,11 @@ class cpx:
 
 		return NotImplemented
 
-	def __pow__(self, o):
-		r = abs(self)
-		arg = atan2(self.imag, self.real)
+	def __pow__(self, n):
+		r, theta = self.rcis()
 
-		if type(o) is int or type(o) is float:
-			return cpx(cos(o * arg), sin(o * arg)) * (r ** o)
+		if type(n) is int or type(n) is float:
+			return cpx(cos(n * theta), sin(n * theta)) * (r ** n)
 
 		return NotImplemented
 
@@ -112,3 +112,12 @@ class cpx:
 
 	def __neg__(self):
 		return cpx(-self.real, -self.imag)
+
+	def rcis(self) -> Tuple[float, float]:
+		r = (self.real ** 2 + self.imag ** 2) ** 0.5
+		theta = atan2(self.real, self.imag)
+		
+		if theta < 0:
+			theta += 2 * pi
+		
+		return r, theta

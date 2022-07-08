@@ -76,7 +76,9 @@ class cpx:
 	def __rmul__(self, o): return self * o
 	def __mul__(self, o):
 		if isinstance(o, cpx) or type(o) is complex:
-			return cpx(self.real * o.real - self.imag * o.imag, self.real * o.imag + self.imag + o.real)
+			return cpx(
+				self.real * o.real - self.imag * o.imag,
+				self.real * o.imag + self.imag * o.real)
 		elif type(o) is int or type(o) is float:
 			return cpx(self.real * o, self.imag * o)
 

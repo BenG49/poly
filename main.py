@@ -29,11 +29,15 @@ if __name__ == '__main__':
 
 	plane = Plane((-10, 10), (-10, 10))
 
+	w.add(CpxColorGraph(plane, lambda x: x * x))
 	w.add(plane)
-	w.add(Graph(plane, lambda x: x * x))
 	
 	w.draw(screen)
-	pg.display.flip()
 
-	while True:
-		...
+	running = True
+	while running:
+		for e in pg.event.get():
+			if e.type == pg.QUIT:
+				running = False
+		
+		pg.display.flip()

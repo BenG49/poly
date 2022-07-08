@@ -1,3 +1,5 @@
+import os
+
 from polylib.parse import parse
 from polylib.poly import Poly
 from polylib.graph import *
@@ -38,6 +40,12 @@ def plot_demo():
 		for e in pg.event.get():
 			if e.type == pg.QUIT:
 				running = False
+			elif e.type == pg.KEYDOWN:
+				# ctrl + s
+				if e.key == pg.K_s and pg.key.get_mods() & pg.KMOD_CTRL:
+					pg.image.save(screen, os.path.join(
+						os.getcwd(),
+						input('FILENAME:').split('.')[0] + '.jpg'))
 		
 		pg.display.flip()
 

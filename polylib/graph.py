@@ -1,5 +1,5 @@
 from math import atan2, pi
-from typing import Any, Callable, List, Sequence, Tuple
+from typing import Any, Callable, Sequence, Tuple
 from .cpx import cpx
 import pygame as pg
 
@@ -11,8 +11,18 @@ Plane extends Drawable
 - xrange, yrange, xstep=1, ystep=1
 '''
 
-def transform(val, min_in, max_in, min_out, max_out):
+def map_range(val: float, min_in: float, max_in: float, min_out: float, max_out: float) -> float:
 	return ((val - min_in) / (max_in - min_in)) * (max_out - min_out) + min_out
+
+def clamp(x: float, min_val: float, max_val: float) -> float:
+	return max(min(x, max_val), min_val)
+
+def angle(x: float, y: float, min_val: float, max_val: float) -> float:
+	zero_to_one = atan2(x, y) / (2 * pi)
+	if zero_to_one < 0:
+		zero_to_one += 1
+	
+	return zero_to_one * (max_val - min_val) + min_val
 
 
 class Drawable:
@@ -53,27 +63,27 @@ class Plane(Drawable):
 	def graph_coord(self, screen, screen_x: int, screen_y: int) -> Tuple[float]:
 		w, h = screen.get_size()
 
-		return (transform(
+		return (map_range(
 					screen_x,
 					0, w,
 					*self.x_range),
-				transform(
+				map_range(
 					screen_y,
-					0, h,
+					h, 0,
 					*self.y_range))
 
 	def screen_cord(self, screen, graph_x: float, graph_y: float) -> Tuple[int]:
 		w, h = screen.get_size()
 
-		return (int(transform(
+		return (int(map_range(
 					graph_x,
 					*self.x_range,
 					0, w)),
 
-				int(transform(
+				int(map_range(
 					graph_y,
 					*self.y_range,
-					0, h)))
+					h, 0)))
 
 	def x_len(self):
 		return self.x_range[1] - self.x_range[0]
@@ -108,9 +118,10 @@ class Plane(Drawable):
 class Graph(Drawable):
 	THICKNESS = 2
 
-	def __init__(self, plane: Plane, func: Callable[[float], float], sample_step: int = 3):
+	def __init__(self, plane: Plane, func: Callable[[float], float], color: Tuple[int] = (120, 200, 240), sample_step: int = 3):
 		self.plane = plane
 		self.func = func
+		self.color = color
 		self.sample_step = sample_step
 
 	def draw(self, screen) -> None:
@@ -123,101 +134,106 @@ class Graph(Drawable):
 			if prev:
 				pg.draw.line(
 					screen,
-					'green',
+					self.color,
 					self.plane.screen_cord(screen, *prev),
 					self.plane.screen_cord(screen, wx, wy),
 					Graph.THICKNESS)
 			
 			prev = (wx, wy)
 
-class CpxColorGraph:
-	def __init__(self, plane: Plane, func: Callable[[cpx], cpx]):
+class CpxGraph:
+	# treats output angle as hue and magnitude as value
+	MODE_HSV = 0
+	# uses colormap to map function output to input
+	MODE_COLORMAP = 1
+	# colors based on real value of function output
+	MODE_REAL = 2
+	# colors based on imaginary value of function output
+	MODE_IMAG = 3
+
+	def __init__(self, plane: Plane, func: Callable[[cpx], cpx], mode: int = 0):
 		self.plane = plane
 		self.func = func
+		self.mode = mode
 
 	def draw(self, screen):
 		w, h = screen.get_size()
 
-		def clamp(x: float, min_val: float, max_val: float) -> float:
-			return max(min(x, max_val), min_val)
-
-		# x and y normalized between 0 and 1
+		# x and y in [0, 1]
 		def colormap(x: float, y: float) -> Tuple[int]:
+			# t must be in [0, 1]
 			def rgb_interp(t: float, *args) -> float:
 				points = list(zip((i * 0.25 for i in range(5)), args))
 
-				left, right = (0, 0), (0, 0)
+				for i in range(1, len(points)):
+					if points[i - 1][0] <= t and points[i][0] >= t:
+						left = points[i - 1]
+						right = points[i]
+						
+						break
 
-				if t < points[0][0]:
-					left = points[0]
-					right = points[1]
-				elif x > points[-1][0]:
-					left = points[-2]
-					right = points[-1]
-				else:
-					for i in range(1, len(points)):
-						if points[i - 1][0] <= t and points[i][0] >= t:
-							left = points[i - 1]
-							right = points[i]
-							
-							break
+				slope = (right[1] - left[1]) / (right[0] - left[0])
+				val = slope * t + left[1] - (slope * left[0])
+				return int(clamp(val, 0, 255))
 
-				slope = ((right[1] - left[1]) / (right[0] - left[0]))
-				val = int(slope * t + left[1] - (slope * left[0]))
-				return clamp(val, 0, 255)
+			# rotate angle by 90 degrees
+			ang = angle(x, y, 0, 1) + 0.25
+			if ang > 1:
+				ang -= 1
 
-			# normalize angle from 0 to 1, rotate by 90 degrees
-			rad = atan2(x, y) / (2 * pi) + 0.25
-			if rad < 0:
-				rad += 1
-
-			r = rgb_interp(rad, 0, 0, 255, 255, 0)
-			g = rgb_interp(rad, 0, 0, 255, 0, 0)
-			b = rgb_interp(rad, 0, 255, 255, 0, 0)
+			r = rgb_interp(ang, 0, 0, 255, 255, 0)
+			g = rgb_interp(ang, 0, 0, 255, 0, 0)
+			b = rgb_interp(ang, 0, 255, 255, 0, 0)
 
 			return (r, g, b)
+
+		def hsv(x: float, y: float, max_mag: float) -> Tuple[float]:
+			h = angle(x, y, 0, 6)
+			s = 1
+			v = clamp(((x ** 2 + y ** 2) ** 0.5) / max_mag, 0, 1)
+
+			c = s * v
+			n = c * (1 - abs(h % 2 - 1))
+
+			if h < 1:   coords = (c, n, 0)
+			elif h < 2: coords = (n, c, 0)
+			elif h < 3: coords = (0, c, n)
+			elif h < 4: coords = (0, n, c)
+			elif h < 5: coords = (n, 0, c)
+			else:       coords = (c, 0, n)
+
+			return tuple(int(255 * (i + v - c)) for i in coords)
 
 		x_delta = self.plane.x_len() / w
 		y_delta = self.plane.y_len() / h
 
 		# loop through graph coordinates
-		y = self.plane.y_range[0]
+		y = self.plane.y_range[1]
 		sy = 0
-		while y <= self.plane.y_range[1]:
-			x = self.plane.y_range[0]
+		while y >= self.plane.y_range[0]:
+			x = self.plane.x_range[0]
 			sx = 0
 			while x <= self.plane.x_range[1]:
 				z_out = self.func(cpx(x, y))
 
-				# in range [-1, 1]
-				x_out = z_out.real / self.plane.x_len() * 2
-				y_out = z_out.imag / self.plane.y_len() * 2
+				if self.mode != CpxGraph.MODE_HSV:
+					# in range [-1, 1]
+					x_out = z_out.real / self.plane.x_len() * 2
+					y_out = z_out.imag / self.plane.y_len() * 2
 
-				screen.set_at(
-					(sx, sy),
-					colormap(x_out, y_out))
-					# (int(255 * clamp(x_out, 0, 1)), int(255 * clamp(-x_out, 0, 1)), 0))
-					# (int(255 * clamp(y_out, 0, 1)), int(255 * clamp(-y_out, 0, 1)), 0))
+				if self.mode == CpxGraph.MODE_HSV:
+					rgb = hsv(*z_out, self.plane.x_len() / 2)
+				elif self.mode == CpxGraph.MODE_COLORMAP:
+					rgb = colormap(x_out, y_out)
+				elif self.mode == CpxGraph.MODE_REAL:
+					rgb = (int(255 * clamp(x_out, 0, 1)), int(255 * clamp(-x_out, 0, 1)), 0)
+				elif self.mode == CpxGraph.MODE_IMAG:
+					rgb = (int(255 * clamp(y_out, 0, 1)), int(255 * clamp(-y_out, 0, 1)), 0)
 
+				screen.set_at((sx, sy), rgb)
 
 				x += x_delta
 				sx += 1
 
-			y += y_delta
+			y -= y_delta
 			sy += 1
-
-		# slightly slower
-		# for sy in range(h):
-		# 	for sx in range(w):
-		# 		z_out = self.func(
-		# 			cpx(*self.plane.graph_coord(screen, sx, sy)))
-
-		# 		# x and y are in range [-1, 1]
-		# 		x = z_out.real / self.plane.x_len() * 2
-		# 		y = z_out.imag / self.plane.y_len() * 2
-
-		# 		screen.set_at(
-		# 			(sx, sy),
-		# 			colormap(x, y))
-		# 			# (int(255 * clamp(x, 0, 1)), int(255 * clamp(-x, 0, 1)), 0))
-		# 			# (int(255 * clamp(y, 0, 1)), int(255 * clamp(-y, 0, 1)), 0))

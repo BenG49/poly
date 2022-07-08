@@ -56,9 +56,10 @@ fix tick spacing
 class Plane(Drawable):
 	ORIGIN_AXES_THICKNESS = 3
 
-	def __init__(self, x_range: Sequence[float], y_range: Sequence[float]):
+	def __init__(self, x_range: Sequence[float], y_range: Sequence[float], axes_only: bool = False):
 		self.x_range = x_range
 		self.y_range = y_range
+		self.axes_only = axes_only
 
 	def graph_coord(self, screen, screen_x: int, screen_y: int) -> Tuple[float]:
 		w, h = screen.get_size()
@@ -94,26 +95,34 @@ class Plane(Drawable):
 	def draw(self, screen) -> None:
 		w, h = screen.get_size()
 
-		# horizontal lines
-		for y in range(*self.y_range):
-			sy = self.screen_cord(screen, 0, y)[1]
+		if self.axes_only:
+			orig = self.screen_cord(screen, 0, 0)
 
-			pg.draw.line(
-				screen,
-				'white',
-				(0, sy),
-				(w, sy),
-				Plane.ORIGIN_AXES_THICKNESS if y == 0 else 1)
+			pg.draw.line(screen, 'white', (0, orig[1]), (w, orig[1]), Plane.ORIGIN_AXES_THICKNESS)
+			pg.draw.line(screen, 'white', (orig[0], 0), (orig[0], h), Plane.ORIGIN_AXES_THICKNESS)
 
-		for x in range(*self.x_range):
-			sx = self.screen_cord(screen, x, 0)[0]
+		else:
+			# horizontal lines
+			for y in range(*self.y_range):
+				sy = self.screen_cord(screen, 0, y)[1]
 
-			pg.draw.line(
-				screen,
-				'white',
-				(sx, 0),
-				(sx, h),
-				Plane.ORIGIN_AXES_THICKNESS if x == 0 else 1)
+				pg.draw.line(
+					screen,
+					'white',
+					(0, sy),
+					(w, sy),
+					Plane.ORIGIN_AXES_THICKNESS if y == 0 else 1)
+
+			# vertical lines
+			for x in range(*self.x_range):
+				sx = self.screen_cord(screen, x, 0)[0]
+
+				pg.draw.line(
+					screen,
+					'white',
+					(sx, 0),
+					(sx, h),
+					Plane.ORIGIN_AXES_THICKNESS if x == 0 else 1)
 
 class Graph(Drawable):
 	THICKNESS = 2

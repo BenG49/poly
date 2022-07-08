@@ -25,7 +25,7 @@ def plot_demo():
 
 	w = Screen(500, 500)
 
-	plane = Plane((-10, 10), (-10, 10))
+	plane = Plane((-10, 10), (-10, 10), True)
 
 	w.add(CpxGraph(plane, lambda x: x * x + 1, CpxGraph.MODE_HSV))
 	w.add(Graph(plane, lambda x: x * x + 1))

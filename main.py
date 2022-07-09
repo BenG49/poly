@@ -23,31 +23,18 @@ def poly_demo():
 	print(Poly.lagrange([(0, 1), (1, -2), (2, 5)]))
 
 def plot_demo():
+	pg.init()
+
 	screen = pg.display.set_mode((500, 500))
 
-	w = Screen(500, 500)
+	w = Window(500, 500)
 
-	plane = Plane((-10, 10), (-10, 10), True)
+	plane = Plane((-10, 10), (-10, 10), lbl_mode=Plane.MODE_CPXLBL, axes_only=False)
 
-	w.add(CpxGraph(plane, lambda x: x ** 4 + 625, CpxGraph.MODE_HSV))
-	# w.add(Graph(plane, lambda x: x * x + 1))
+	# w.add(CpxGraph(plane, lambda x: x ** 4 + 625, CpxGraph.MODE_HSV))
+	w.add(Graph(plane, lambda x: 2 ** x))
 	w.add(plane)
-	
 	w.draw(screen)
-
-	running = True
-	while running:
-		for e in pg.event.get():
-			if e.type == pg.QUIT:
-				running = False
-			elif e.type == pg.KEYDOWN:
-				# ctrl + s
-				if e.key == pg.K_s and pg.key.get_mods() & pg.KMOD_CTRL:
-					pg.image.save(screen, os.path.join(
-						os.getcwd(),
-						input('FILENAME:').split('.')[0] + '.jpg'))
-		
-		pg.display.flip()
 
 if __name__ == '__main__':
 	plot_demo()

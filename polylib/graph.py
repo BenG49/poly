@@ -1,3 +1,4 @@
+import os
 from math import atan2, pi
 from typing import Any, Callable, Sequence, Tuple
 from .cpx import cpx
@@ -32,7 +33,7 @@ class Drawable:
 def kwarg(self, kwargs: dict, key: str, default: Any) -> None:
 	self.__dict__[key] = kwargs[key] if (key in kwargs) else default
 
-class Screen(Drawable):
+class Window(Drawable):
 	def __init__(self, width: int, height: int) -> None:
 		self.width = width
 		self.height = height
@@ -49,42 +50,53 @@ class Screen(Drawable):
 		for layer in self.layers:
 			layer.draw(screen)
 
+		running = True
+		while running:
+			for e in pg.event.get():
+				if e.type == pg.QUIT:
+					running = False
+				elif e.type == pg.KEYDOWN:
+					# ctrl + s
+					if e.key == pg.K_s and pg.key.get_mods() & pg.KMOD_CTRL:
+						pg.image.save(screen, os.path.join(
+							os.getcwd(),
+							input('FILENAME:').split('.')[0] + '.jpg'))
+			
+			pg.display.flip()
+
 '''
 add axis labels
 fix tick spacing
 '''
 class Plane(Drawable):
+	MODE_NOLBL = 0
+	MODE_LBL = 2
+	MODE_CPXLBL = 1
+
 	ORIGIN_AXES_THICKNESS = 3
 
-	def __init__(self, x_range: Sequence[float], y_range: Sequence[float], axes_only: bool = False):
+	def __init__(self, x_range: Sequence[float], y_range: Sequence[float], lbl_mode: int = MODE_LBL, font: str = None, axes_only: bool = False):
 		self.x_range = x_range
 		self.y_range = y_range
+		self.lbl_mode = lbl_mode
 		self.axes_only = axes_only
+
+		if font:
+			self.font = pg.font.Font(font, 12)
+		else:
+			self.font = pg.font.SysFont(None, 12)
 
 	def graph_coord(self, screen, screen_x: int, screen_y: int) -> Tuple[float]:
 		w, h = screen.get_size()
 
-		return (map_range(
-					screen_x,
-					0, w,
-					*self.x_range),
-				map_range(
-					screen_y,
-					h, 0,
-					*self.y_range))
+		return (map_range(screen_x, 0, w, *self.x_range),
+				map_range(screen_y, h, 0, *self.y_range))
 
 	def screen_cord(self, screen, graph_x: float, graph_y: float) -> Tuple[int]:
 		w, h = screen.get_size()
 
-		return (int(map_range(
-					graph_x,
-					*self.x_range,
-					0, w)),
-
-				int(map_range(
-					graph_y,
-					*self.y_range,
-					h, 0)))
+		return (int(map_range(graph_x, *self.x_range, 0, w)),
+				int(map_range(graph_y, *self.y_range, h, 0)))
 
 	def x_len(self):
 		return self.x_range[1] - self.x_range[0]
@@ -93,36 +105,35 @@ class Plane(Drawable):
 		return self.y_range[1] - self.y_range[0]
 
 	def draw(self, screen) -> None:
-		w, h = screen.get_size()
+		def text(x: int, y: int, s: str):
+			img = self.font.render(s, True)
+			screen.blit(img, (x, y))
+		
+		def gridline(graph_val: float, x_axis: True):
+			def t(a, b, a_first: bool):
+				return (a, b) if a_first else (b, a)
+
+			index = 0 if x_axis else 1
+			screen_val = self.screen_cord(screen, *t(graph_val, 0, x_axis))[index]
+
+			pg.draw.line(
+				screen,
+				'white',
+				t(screen_val, 0, x_axis),
+				t(screen_val, screen.get_size()[index], x_axis),
+				Plane.ORIGIN_AXES_THICKNESS if graph_val == 0 else 1)
 
 		if self.axes_only:
-			orig = self.screen_cord(screen, 0, 0)
-
-			pg.draw.line(screen, 'white', (0, orig[1]), (w, orig[1]), Plane.ORIGIN_AXES_THICKNESS)
-			pg.draw.line(screen, 'white', (orig[0], 0), (orig[0], h), Plane.ORIGIN_AXES_THICKNESS)
-
+			gridline(0, True)
+			gridline(0, False)
 		else:
 			# horizontal lines
 			for y in range(*self.y_range):
-				sy = self.screen_cord(screen, 0, y)[1]
-
-				pg.draw.line(
-					screen,
-					'white',
-					(0, sy),
-					(w, sy),
-					Plane.ORIGIN_AXES_THICKNESS if y == 0 else 1)
+				gridline(y, False)
 
 			# vertical lines
 			for x in range(*self.x_range):
-				sx = self.screen_cord(screen, x, 0)[0]
-
-				pg.draw.line(
-					screen,
-					'white',
-					(sx, 0),
-					(sx, h),
-					Plane.ORIGIN_AXES_THICKNESS if x == 0 else 1)
+				gridline(x, True)
 
 class Graph(Drawable):
 	THICKNESS = 2
